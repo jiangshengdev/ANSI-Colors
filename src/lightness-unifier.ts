@@ -1,6 +1,6 @@
 // 亮度统一化工具类
-import { oklch, formatHex } from 'culori';
-import { TerminalColor, OklchColor } from './types';
+import { formatHex, oklch } from 'culori';
+import { OklchColor, TerminalColor } from './types';
 
 export interface LightnessUnificationOptions {
   /** 目标亮度值 (0-1) */
@@ -75,6 +75,56 @@ export class LightnessUnifier {
     }
 
     return result;
+  }
+
+  /**
+   * 分析亮度统一的效果
+   */
+  static analyzeLightnessUnification(
+    original: TerminalColor,
+    unified: TerminalColor,
+  ): {
+    originalStats: { average: number; range: number; variance: number };
+    unifiedStats: { average: number; range: number; variance: number };
+    changes: Array<{
+      name: string;
+      originalL: number;
+      unifiedL: number;
+      change: number;
+    }>;
+  } {
+    const getStats = (colors: TerminalColor) => {
+      const colorfulColors = this.getColorfulColors(colors);
+      const lightnesses = colorfulColors.map((c) => c.oklch.l);
+
+      const average =
+        lightnesses.reduce((sum, l) => sum + l, 0) / lightnesses.length;
+      const range = Math.max(...lightnesses) - Math.min(...lightnesses);
+      const variance =
+        lightnesses.reduce((sum, l) => sum + Math.pow(l - average, 2), 0) /
+        lightnesses.length;
+
+      return { average, range, variance };
+    };
+
+    const originalColorful = this.getColorfulColors(original);
+    const unifiedColorful = this.getColorfulColors(unified);
+
+    const changes = originalColorful.map((orig, index) => {
+      const unified = unifiedColorful[index];
+      return {
+        name: orig.name,
+        originalL: orig.oklch.l,
+        unifiedL: unified.oklch.l,
+        change: unified.oklch.l - orig.oklch.l,
+      };
+    });
+
+    return {
+      originalStats: getStats(original),
+      unifiedStats: getStats(unified),
+      changes,
+    };
   }
 
   /**
@@ -177,55 +227,5 @@ export class LightnessUnifier {
         result[name] = newHex;
       }
     });
-  }
-
-  /**
-   * 分析亮度统一的效果
-   */
-  static analyzeLightnessUnification(
-    original: TerminalColor,
-    unified: TerminalColor,
-  ): {
-    originalStats: { average: number; range: number; variance: number };
-    unifiedStats: { average: number; range: number; variance: number };
-    changes: Array<{
-      name: string;
-      originalL: number;
-      unifiedL: number;
-      change: number;
-    }>;
-  } {
-    const getStats = (colors: TerminalColor) => {
-      const colorfulColors = this.getColorfulColors(colors);
-      const lightnesses = colorfulColors.map((c) => c.oklch.l);
-
-      const average =
-        lightnesses.reduce((sum, l) => sum + l, 0) / lightnesses.length;
-      const range = Math.max(...lightnesses) - Math.min(...lightnesses);
-      const variance =
-        lightnesses.reduce((sum, l) => sum + Math.pow(l - average, 2), 0) /
-        lightnesses.length;
-
-      return { average, range, variance };
-    };
-
-    const originalColorful = this.getColorfulColors(original);
-    const unifiedColorful = this.getColorfulColors(unified);
-
-    const changes = originalColorful.map((orig, index) => {
-      const unified = unifiedColorful[index];
-      return {
-        name: orig.name,
-        originalL: orig.oklch.l,
-        unifiedL: unified.oklch.l,
-        change: unified.oklch.l - orig.oklch.l,
-      };
-    });
-
-    return {
-      originalStats: getStats(original),
-      unifiedStats: getStats(unified),
-      changes,
-    };
   }
 }

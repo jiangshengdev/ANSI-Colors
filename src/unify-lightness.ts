@@ -1,12 +1,13 @@
 // 亮度统一化脚本入口
 import { loadTheme } from './theme-loader';
 import {
-  LightnessUnifier,
   LightnessUnificationOptions,
+  LightnessUnifier,
 } from './lightness-unifier';
 import { ThemeWriter, ThemeWriterOptions } from './theme-writer';
 import { OutputFormatter } from './output-formatter';
 import { ThemeColors } from './types';
+import { CONFIG } from './config';
 import * as path from 'path';
 
 export interface UnifyLightnessCliOptions {
@@ -40,13 +41,13 @@ export class LightnessUnificationCli {
    */
   static parseArgs(args: string[]): UnifyLightnessCliOptions {
     const options: UnifyLightnessCliOptions = {
-      input: '',
+      input: CONFIG.DEFAULT_THEME_PATH, // 使用与 dev 脚本相同的默认文件
       autoTarget: true, // 默认使用自动计算的平均值
       preserveMonochrome: true,
       maxChange: 100, // 增加到100%，允许更大的变化
       preserveOrder: false, // 不保持相对顺序，直接统一到平均值
-      overwrite: false,
-      backup: true,
+      overwrite: true, // 默认强制覆盖已存在的文件
+      backup: false,
       mode: 'both',
       verbose: false,
     };
@@ -110,10 +111,9 @@ export class LightnessUnificationCli {
       }
     }
 
+    // 如果没有通过命令行指定输入文件，使用默认文件
     if (!options.input) {
-      console.error('❌ 错误: 必须指定输入文件路径');
-      this.printHelp();
-      process.exit(1);
+      options.input = CONFIG.DEFAULT_THEME_PATH;
     }
 
     return options;
